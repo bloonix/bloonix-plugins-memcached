@@ -1,0 +1,324 @@
+#!/usr/bin/perl
+
+=head1 NAME
+
+check-memcached - Plugin to check memcached.
+
+=head1 SYNOPSIS
+
+    check-memcached [ OPTIONS ]
+
+    check-memcached --help
+
+=head1 REPORTING BUGS
+
+Please report all bugs to <support(at)bloonix.de>.
+
+=head1 AUTHOR
+
+Jonny Schulz <support(at)bloonix.de>.
+
+=head1 POWERED BY
+
+     _    __ _____ _____ __  __ __ __   __
+    | |__|  |     |     |  \|  |__|\  \/  /
+    |  . |  |  |  |  |  |      |  | >    <
+    |____|__|_____|_____|__|\__|__|/__/\__\
+
+=head1 COPYRIGHT
+
+Copyright (C) 2012-2014 by Jonny Schulz. All rights reserved.
+
+=cut
+
+use strict;
+use warnings;
+use Bloonix::Plugin;
+
+# -------------------------------------------------------
+# Memcached keys
+#    0 = no counter
+#    1 = counter
+#   -1 = not a memcached key, this key is self generated
+# -------------------------------------------------------
+
+my %memcachedkeys = (
+#    pid => 0,
+#    uptime => 0,
+    time => 0,
+#    version => 0,
+#    pointer_size => 0,
+#    rusage_user => 0,
+#    rusage_system => 0,
+    curr_connections => 0,
+    total_connections => 1,
+#    connection_structures => 0,
+    cmd_get => 1,
+    cmd_set => 1,
+    cmd_flush => 1,
+    get_hits => 1,
+    get_misses => 1,
+#    delete_misses => 1,
+#    delete_hits => 1,
+#    incr_misses => 1,
+#    incr_hits => 1,
+#    decr_misses => 1,
+#    decr_hits => 1,
+#    cas_misses => 1,
+#    cas_hits => 1,
+#    cas_badval => 1,
+#    auth_cmds => 1,
+#    auth_errors => 1,
+    bytes_read => 1,
+    bytes_written => 1,
+    bytes_free => -1,
+    bytes_used => -1,
+    bytes_used_per => -1,
+    limit_maxbytes => 0,
+#    accepting_conns => 0,
+#    listen_disabled_num => 0,
+    threads => 0,
+#    conn_yields => 1,
+    bytes => 0,
+    curr_items => 0,
+    total_items => 1,
+    evictions => 1,
+    reclaimed => 1,
+);
+
+# -------------------------------------------------------
+# Plugin options
+# -------------------------------------------------------
+
+my $plugin = Bloonix::Plugin->new(version => "0.3");
+
+$plugin->has_threshold(
+    keys => [
+        { key => 'time' },
+        # { key => 'version' },
+        # { key => 'pointer_size' },
+        # { key => 'rusage_user' },
+        # { key => 'rusage_system' },
+        { key => 'curr_connections' },
+        { key => 'total_connections' },
+        # { key => 'connection_structures' },
+        { key => 'cmd_get' },
+        { key => 'cmd_set' },
+        { key => 'cmd_flush' },
+        { key => 'get_hits' },
+        { key => 'get_misses' },
+        # { key => 'delete_misses' },
+        # { key => 'delete_hits' },
+        # { key => 'incr_misses' },
+        # { key => 'incr_hits' },
+        # { key => 'decr_misses' },
+        # { key => 'decr_hits' },
+        # { key => 'cas_misses' },
+        # { key => 'cas_hits' },
+        # { key => 'cas_badval' },
+        # { key => 'auth_cmds' },
+        # { key => 'auth_errors' },
+        { key => 'bytes_read', unit => "bytes" },
+        { key => 'bytes_written', unit => "bytes" },
+        { key => 'bytes_free', unit => "bytes" },
+        { key => 'bytes_used', unit => "bytes" },
+        { key => 'bytes_used_per' },
+        { key => 'limit_maxbytes', unit => "bytes" },
+        # { key => 'accepting_conns' },
+        # { key => 'listen_disabled_num' },
+        { key => 'threads' },
+        # { key => 'conn_yields' },
+        { key => 'bytes', unit => "bytes" },
+        { key => 'curr_items' },
+        { key => 'total_items' },
+        { key => 'evictions' },
+        { key => 'reclaimed' }
+    ]
+);
+
+$plugin->has_host(mandatory => 1);
+$plugin->has_port(default => 11211);
+$plugin->has_use_ipv6;
+$plugin->has_use_ssl;
+$plugin->has_timeout(default => 10);
+
+$plugin->example(
+    description => [
+        "An example to check the memory usage that memcached is allowed to allocate and trigger",
+        "",
+        "- a warning status if more than or equal 90% is in use",
+        "- or a critical status if more than or equal 95% is in use"
+    ],
+    arguments => [
+        warning => "bytes_used_per:ge:90",
+        critical => "bytes_used_per:ge:95"
+    ]
+);
+
+# --------------------------------------------------
+# Parse options
+# --------------------------------------------------
+
+my $opt = $plugin->parse_options;
+my $sockmod = "";
+
+if ($opt->{use_ssl}) {
+    require IO::Socket::SSL;
+
+    if (!$opt->{use_ipv6}) {
+        IO::Socket::SSL->import('inet4');
+    }
+
+    $sockmod = "IO::Socket::SSL";
+} elsif ($opt->{use_ipv6}) {
+    require IO::Socket::INET6;
+    $sockmod = "IO::Socket::INET6";
+} else {
+    require IO::Socket::INET;
+    $sockmod = "IO::Socket::INET";
+}
+
+# --------------------------------------------------
+# load() function to request memcached statistics
+# --------------------------------------------------
+
+sub load {
+    my ($host, $port, $timeout, $sockmod, $keys) = @_;
+    my $time = Time::HiRes::gettimeofday();
+    my %stat = ();
+
+    eval {
+        $SIG{__DIE__} = sub { alarm(0) };
+        $SIG{ALRM} = sub { die "timeout\n" };
+        alarm($timeout);
+
+        my $sock = $sockmod->new(
+            PeerAddr => $host,
+            PeerPort => $port,
+            Proto    => "tcp",
+        ) or die "unable to connect to memcached $host:$port\n";
+
+        print $sock "stats\r\n";
+
+        while (my $line = <$sock>) {
+            $line =~ s/[\r\n]//g;
+
+            if ($line =~ /^STAT\s+([a-z_]+)\s+([\d\.]+)/) {
+                if (exists $keys->{$1}) {
+                    $stat{$1} = $2;
+                }
+            } elsif ($line eq "END") {
+                last;
+            }
+        }
+
+        print $sock "quit\r\n";
+        close $sock;
+    };
+
+    if ($@) {
+        if ($@ =~ /^timeout/) {
+            $plugin->exit(
+                status => "CRITICAL",
+                message => "request timed out after $timeout seconds"
+            );
+        } else {
+            my $err = $@;
+            chomp($err);
+            $err =~ s/\n/ /g;
+            $plugin->exit(
+                status => "CRITICAL",
+                message => $err
+            );
+        }
+    }
+
+    $time = sprintf("%.6f", Time::HiRes::gettimeofday() - $time);
+    return wantarray ? (\%stat, $time) : \%stat;
+}
+
+# --------------------------------------------------
+# Load initial statistics
+# --------------------------------------------------
+
+my $init = $plugin->load_json;
+
+if (!defined $init) {
+    $init = &load($opt->{host}, $opt->{port}, $opt->{timeout}, $sockmod, \%memcachedkeys);
+    sleep 1;
+}
+
+# --------------------------------------------------
+# Load current statistics
+# --------------------------------------------------
+
+my ($stat, $time) = &load($opt->{host}, $opt->{port}, $opt->{timeout}, $sockmod, \%memcachedkeys);
+
+foreach my $key (keys %memcachedkeys) {
+    next if $memcachedkeys{$key} == -1;
+
+    if (!defined $stat->{$key}) {
+        warn "missing statistic key '$key' from memcached\n";
+    }
+}
+
+# --------------------------------------------------
+# Calculate deltas
+# --------------------------------------------------
+
+my $delta = $stat->{time} - $init->{time};
+my $total = $stat->{get_hits} + $stat->{get_misses};
+
+if ($total) {
+    $stat->{hitratio} = sprintf("%.2f", $stat->{get_hits} / $total * 100);
+    $stat->{missratio} = sprintf("%.2f", $stat->{get_misses} / $total * 100);
+} else {
+    $stat->{hitratio} = "0.00";
+    $stat->{missratio} = "0.00";
+}
+
+foreach my $key (keys %memcachedkeys) {
+    next if $memcachedkeys{$key} == -1;
+
+    my $value = $stat->{$key};
+
+    if ($memcachedkeys{$key} == 1) {
+        if ($stat->{$key} == $init->{$key} || $init->{$key} > $stat->{$key}) {
+            $stat->{$key} = sprintf("%.2f", 0);
+        } elsif ($delta > 0) {
+            $stat->{$key} = sprintf("%.2f", ($stat->{$key} - $init->{$key}) / $delta);
+        } else {
+            $stat->{$key} = sprintf("%.2f", $stat->{$key} - $init->{$key});
+        }
+    }
+
+    $init->{$key} = $value;
+}
+
+$stat->{connections} = delete $stat->{total_connections};
+$stat->{items} = delete $stat->{total_items};
+$stat->{bytes_used_per} = sprintf("%.2f", $stat->{bytes} * 100 / $stat->{limit_maxbytes});
+$stat->{bytes_free} = $stat->{limit_maxbytes} - $stat->{bytes};
+$stat->{bytes_used} = delete $stat->{bytes};
+delete $stat->{limit_maxbytes};
+
+# --------------------------------------------------
+# Store statistics for the next run
+# --------------------------------------------------
+
+$plugin->safe_json($init);
+
+# --------------------------------------------------
+# Check warning and critical
+# --------------------------------------------------
+
+my $result = $plugin->check_thresholds(
+    stats => $stat,
+    upshot_keys => [qw(cmd_get cmd_set get_hits get_misses)]
+);
+
+$plugin->exit(
+    status => $result->{status},
+    message => "$result->{upshot}, response in ${time}s",
+    stats => $stat
+);

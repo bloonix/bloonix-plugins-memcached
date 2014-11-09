@@ -1,0 +1,29 @@
+bloonix-plugins-memcached (0.6-1) unstable; urgency=low
+
+    * Fixed key get_miss -> get_misses.
+
+ -- Jonny Schulz <js@bloonix.de>  Sun, 09 Nov 2014 00:29:49 +0100
+
+bloonix-plugins-memcached (0.5-1) unstable; urgency=low
+
+    * Updated the license information.
+
+ -- Jonny Schulz <js@bloonix.de>  Mon, 03 Nov 2014 21:16:28 +0100
+
+bloonix-plugins-memcached (0.4-1) unstable; urgency=low
+
+    * Licence added and old releases deleted.
+
+ -- Jonny Schulz <js@bloonix.de>  Tue, 26 Aug 2014 11:39:25 +0200
+
+bloonix-plugins-memcached (0.3-1) unstable; urgency=low
+
+    * Complete rewrite of all plugins.
+
+ -- Jonny Schulz <js@bloonix.de>  Sat, 23 Mar 2014 00:00:00 +0100
+
+bloonix-plugins-memcached (0.1-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Jonny Schulz <js@bloonix.de>  Sat, 17 Mar 2012 21:08:02 +0100

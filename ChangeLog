@@ -1,0 +1,25 @@
+bloonix-plugins-memcached (0.6) released at 2014-11-08
+
+    * Fixed key get_miss -> get_misses.
+
+bloonix-plugins-memcached (0.5) released at 2014-11-03
+
+    * Updated the license information.
+
+bloonix-plugins-memcached (0.4) released at 2014-08-25
+
+    * Licence added and old releases deleted.
+
+bloonix-plugins-memcached (0.3) released at 2014-03-23
+
+    * Complete rewrite of all plugins.
+
+bloonix-plugins-memcached (0.2) released at 2013-05-14
+
+    * Fixed - the keys bytes_free, bytes_used and bytes_used_per
+      can now be monitored.
+    * The statistics of all plugins is now printed in JSON format.
+
+bloonix-plugins-memcached (0.1) released at 2012-03-17
+
+    * Initial release.

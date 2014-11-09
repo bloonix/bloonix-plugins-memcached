@@ -1,0 +1,333 @@
+plugin {
+    id 41
+    plugin Memcached.Check
+    command check-memcached
+    datatype statistic
+    category System,Caching,Memcached
+    netaccess yes
+    prefer localhost
+    abstract Memcached check
+    description Memcached statistics
+}
+
+statistic {
+    statkey bytes_used
+    alias Bytes used
+    datatype bigint
+    units bytes
+    description Current number of bytes used to store items.
+}
+
+statistic {
+    statkey bytes_free
+    alias Bytes free
+    datatype bigint
+    units bytes
+    description Current number of bytes free to store items.
+}
+
+statistic {
+    statkey bytes_used_per
+    alias Bytes used
+    datatype float
+    units percent
+    description Total size in percent memcached is used from the maximum allowed memory size.
+}
+
+statistic {
+    statkey limit_maxbytes
+    alias Max bytes allowed
+    datatype bigint
+    units bytes
+    description Number of bytes this server is allowed to use for storage.
+}
+
+statistic {
+    statkey bytes_read
+    alias Bytes read
+    datatype float
+    units bytes
+    description Number of bytes read by this server from network per second.
+}
+
+statistic {
+    statkey bytes_written
+    alias Bytes written
+    datatype float
+    units bytes
+    description Number of bytes sent by this server per second.
+}
+
+statistic {
+    statkey cmd_flush
+    alias Flushes
+    datatype float
+    description Cumulative number of flush reqs per second.
+}
+
+statistic {
+    statkey cmd_get
+    alias Gets
+    datatype float
+    description Cumulative number of retrieval reqs per second.
+}
+
+statistic {
+    statkey cmd_set
+    alias Sets
+    datatype float
+    description Cumulative number of storage reqs per second.
+}
+
+statistic {
+    statkey curr_connections
+    alias Open connections
+    datatype bigint
+    description Number of open connections.
+}
+
+statistic {
+    statkey connections
+    alias Connections/second
+    datatype float
+    description Number of connections opened per second.
+}
+
+statistic {
+    statkey curr_items
+    alias Items stored
+    datatype bigint
+    description Current number of items stored.
+}
+
+statistic {
+    statkey items
+    alias Items/second stored
+    datatype float
+    description Number of items stored per second.
+}
+
+statistic {
+    statkey evictions
+    alias Evictions
+    datatype float
+    description Number of valid items removed from cache to free memory for new items per second.
+}
+
+statistic {
+    statkey reclaimed
+    alias Reclaimed
+    datatype float
+    description Number of times an entry was stored using memory from an expired entry per second.
+}
+
+statistic {
+    statkey get_hits
+    alias Hits
+    datatype float
+    description Number of keys that have been requested and found present per second.
+}
+
+statistic {
+    statkey get_misses
+    alias Misses
+    datatype float
+    description Number of items that have been requested and not found per second.
+}
+
+statistic {
+    statkey threads
+    alias Threads
+    datatype bigint
+    description Number of worker threads requested.
+}
+
+chart {
+    id 1
+    title Memcached - bytes used
+    options {
+        ylabel bytes
+        units bytes
+        chart-type area
+        series {
+            name bytes_used
+            color \#005467
+        }
+        series {
+            name bytes_free
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 2
+    title Memcached - network traffic
+    options {
+        ylabel read / written
+        units bytes
+        chart-type area
+        series {
+            name bytes_written
+            color \#005467
+        }
+        series {
+            name bytes_read
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 3
+    title Memcached - requests/s
+    options {
+        ylabel get / set
+        units default
+        chart-type area
+        series {
+            name cmd_set
+            color \#005467
+        }
+        series {
+            name cmd_get
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 4
+    title Memcached - current connections
+    options {
+        ylabel connections
+        units null
+        chart-type area
+        series {
+            name curr_connections
+            color \#005467
+        }
+    }
+}
+
+chart {
+    id 5
+    title Memcached - connections/s
+    options {
+        ylabel connections
+        units null
+        chart-type area
+        series {
+            name connections
+            color \#005467
+        }
+    }
+}
+
+chart {
+    id 6
+    title Memcached - items cached
+    options {
+        ylabel items cached
+        units null
+        chart-type area
+        series {
+            name curr_items
+            color \#005467
+        }
+    }
+}
+
+chart {
+    id 7
+    title Memcached - items/s cached
+    options {
+        ylabel items cached
+        units null
+        chart-type area
+        series {
+            name items
+            color \#005467
+        }
+    }
+}
+
+chart {
+    id 8
+    title Memcached - evictions/s
+    options {
+        ylabel evictions
+        units null
+        chart-type area
+        series {
+            name evictions
+            color \#005467
+        }
+    }
+}
+
+chart {
+    id 9
+    title Memcached - reclaimed/s
+    options {
+        ylabel reclaimed
+        units null
+        chart-type area
+        series {
+            name reclaimed
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 10
+    title Memcached - cache hits and misses
+    options {
+        ylabel misses / hits
+        units default
+        chart-type area
+        series {
+            name cmd_set
+            color \#ff7a0d
+        }
+        series {
+            name cmd_get
+            color \#005467
+        }
+    }
+}
+
+chart {
+    id 11
+    title Memcached - cache hit and miss ratio
+    options {
+        ylabel miss ratio / hit ratio
+        units default
+        chart-type area
+        series {
+            name hitratio
+            color \#ff7a0d
+        }
+        series {
+            name missratio
+            color \#005467
+            opposite true
+        }
+    }
+}
+
+chart {
+    id 12
+    title Memcached - threads
+    options {
+        ylabel threads
+        units null
+        chart-type area
+        series {
+            name threads
+            color \#005467
+        }
+    }
+}
+
