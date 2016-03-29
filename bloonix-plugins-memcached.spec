@@ -1,6 +1,6 @@
 Summary: Bloonix plugins for Memcached.
 Name: bloonix-plugins-memcached
-Version: 0.6
+Version: 0.7
 Release: 1%{dist}
 License: Commercial
 Group: Utilities/System
@@ -52,6 +52,8 @@ rm -rf %{buildroot}
 %doc %attr(0444, root, root) %{docdir}/LICENSE
 
 %changelog
+* Tue Mar 29 2016 Jonny Schulz <js@bloonix.de> - 0.7-1
+- Extra release because the gpg key of bloonix is updated.
 * Sun Nov 09 2014 Jonny Schulz <js@bloonix.de> - 0.6-1
 - Fixed key get_miss -> get_misses.
 * Mon Nov 03 2014 Jonny Schulz <js@bloonix.de> - 0.5-1
